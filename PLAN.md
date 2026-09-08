@@ -331,6 +331,39 @@ useful to a client and shows judgment to a reader. Cheap to build, easy to cut.
 
 ---
 
+## 8b. Findings that changed the plan
+
+Recorded as they were discovered, so the write-up can distinguish what was
+designed up front from what the data forced.
+
+**Session 1 — `postal_code` causes perfect separation.** All 120 customers in
+postal code 21217 filed a claim, in every split (75 train / 21 val / 24 test).
+Their other attributes are unremarkable, so this is a generation artifact, not a
+fact about drivers. The logistic MLE diverges: coefficient 22.3 on the log-odds
+scale, `ConvergenceWarning`, no convergence. Consequences: `postal_code` is
+modelled as a category, fitted with an L2 penalty so it converges, and whatever
+accuracy it earns is reported with an explicit warning that it must not be
+shipped. Its coefficient is not interpretable as an effect size.
+
+**Session 1 — D4 is a second bug in disguise.** `postal_code` is stored as an
+integer, so the reference's dtype-driven pipeline fits a single linear slope
+across the values 10238, 21217, 32765, 92101. Postal codes are labels; that
+arithmetic is meaningless. Same root cause as the dummy-expansion asymmetry,
+different symptom. Both are fixed by `config.py`'s explicit feature taxonomy.
+
+**Session 1 — the reference's answer is not settled by EDA.** `age` spreads the
+outcome slightly *wider* than `driving_experience` (0.627 vs 0.612), and the two
+are structurally nested — Cramér's V of 0.668, with a triangular crosstab, since
+a 16-25 year old cannot have 30 years of experience. Session 3's comparison is
+therefore doing real work rather than confirming a foregone conclusion.
+
+**Session 1 — D4 confirmed on the current stack.** statsmodels 0.15 replaced
+patsy with formulaic, so the expansion behaviour needed re-checking. It is
+unchanged: `driving_experience` enters as 4 parameters, `age` as 2. The defect
+is live, not a historical artifact of the 2023 notebook.
+
+---
+
 ## 9. Scope guardrails
 
 Things that would improve a Kaggle score and would **not** improve this project:
