@@ -362,6 +362,27 @@ patsy with formulaic, so the expansion behaviour needed re-checking. It is
 unchanged: `driving_experience` enters as 4 parameters, `age` as 2. The defect
 is live, not a historical artifact of the 2023 notebook.
 
+**Session 2 — D6 closed, and the reference got lucky.** Missingness carries no
+detectable signal. Against the outcome: p = 0.67 for `credit_score`, p = 0.091 for
+`annual_mileage`. Against 22 other-feature comparisons: smallest p = 0.019 against
+a Bonferroni threshold of 0.0023, so nothing survives. Median imputation is
+correct and no indicator variable is added. The reference reached the same
+imputation by assuming MCAR; we reached it by testing. Same action, different
+standard of evidence, and the write-up can now say which.
+
+**Session 2 — D3 closed, and the leak is worth one row.** Full-data medians differ
+from train-only medians by 0.001 on `credit_score` and by exactly zero on
+`annual_mileage`, which is recorded in round thousands. Downstream, the leak flips
+**one validation prediction out of 1,500**. Report this plainly rather than
+inflating it: on 10,000 rows with a stable median the leakage is immaterial, and
+the reason to fix it is that you cannot know that without measuring it.
+
+**Session 2 — the two encoding schemes should disagree.** Log-odds across ordinal
+levels are near-straight for `income` and `education` but visibly curved for `age`
+and `driving_experience`. Dummy encoding is therefore expected to fit the two
+leading candidates better, and the open question for Session 3 is whether the extra
+parameters earn their keep once AIC prices them.
+
 ---
 
 ## 9. Scope guardrails

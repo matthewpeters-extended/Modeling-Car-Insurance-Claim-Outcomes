@@ -1,0 +1,17 @@
+,linear,dummy,kind
+age,1,3,ordinal
+gender,1,1,nominal
+driving_experience,1,3,ordinal
+education,1,2,ordinal
+income,1,3,ordinal
+credit_score,1,1,continuous
+vehicle_ownership,1,1,binary
+vehicle_year,1,1,nominal
+married,1,1,binary
+children,1,1,binary
+postal_code,3,3,nominal
+annual_mileage,1,1,continuous
+vehicle_type,1,1,nominal
+speeding_violations,1,1,count
+duis,1,1,count
+past_accidents,1,1,count
