@@ -42,6 +42,10 @@ def claim_rate_bar(df, col, ax, order=None, baseline=None):
                    label=f"base rate {baseline:.3f}")
         ax.legend(fontsize=7, loc="upper right")
     ax.set_title(col, fontsize=10)
+    ax.tick_params(axis="x", labelsize=8)
+    if max(len(str(i)) for i in g.index) > 8:
+        ax.set_xticks(range(len(g)))
+        ax.set_xticklabels([str(i) for i in g.index], rotation=20, ha="right")
     ax.set_ylabel("claim rate")
     ax.set_ylim(0, 1.05)
     for i, (n, m) in enumerate(zip(g["size"], g["mean"])):

@@ -100,7 +100,12 @@ from that line.
 co("""
 cat_cols = list(cfg.ORDINAL_LEVELS) + ["vehicle_year", "vehicle_type", "gender"] + cfg.BINARY
 
-fig, axes = plt.subplots(3, 3, figsize=(13, 9))
+# 4x3 grid, not 3x3: zip() would silently drop the last feature if the grid
+# were too small, which is precisely the kind of quiet omission this project
+# is about catching.
+nrows = -(-len(cat_cols) // 3)
+fig, axes = plt.subplots(nrows, 3, figsize=(13, 3.1 * nrows))
+assert axes.size >= len(cat_cols), "grid too small, a feature would be dropped"
 for ax, col in zip(axes.ravel(), cat_cols):
     claim_rate_bar(train, col, ax, order=cfg.ORDINAL_LEVELS.get(col), baseline=rate)
 for ax in axes.ravel()[len(cat_cols):]:
