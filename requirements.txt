@@ -1,0 +1,11 @@
+# Direct dependencies. Pinned versions live in requirements-lock.txt,
+# generated with `pip freeze` once the environment is known good.
+pandas>=2.2
+numpy>=1.26
+scipy>=1.13
+statsmodels>=0.14
+scikit-learn>=1.5
+matplotlib>=3.9
+seaborn>=0.13
+jupyterlab>=4.2
+pytest>=8.2
