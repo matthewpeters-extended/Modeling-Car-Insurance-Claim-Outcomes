@@ -409,6 +409,39 @@ gains 53.5 AIC points from dummy encoding, while the near-straight `income` and
 **Session 3 — the canary passed.** `vehicle_type` scored AUC 0.494 and zero lift,
 asserted in the notebook. The harness is trustworthy.
 
+**Session 4 — the winner's margin over second place is not real.** Paired
+bootstrap, 10,000 resamples on validation: `driving_experience` minus `age` has a
+95% CI of [-0.010, +0.029], straddling zero, with P(better) = 0.82. The lift over
+baseline is by contrast unambiguous — CI [+0.081, +0.121], beating the baseline in
+10,000 of 10,000 resamples. The defensible claim is "driving experience and age are
+statistically indistinguishable, and both clearly beat the baseline," not "driving
+experience is the best predictor." Session 1 anticipated this: the two are
+structurally nested with Cramér's V of 0.668.
+
+**Session 4 — the 0.5 threshold is wrong even at symmetric cost.** The cost-optimal
+threshold is 0.25 at 1:1 and 0.05 at 5:1, never 0.5. At the 5:1 optimum, accuracy
+falls to 61.3%, *below* the 68.67% baseline — a model tuned for business cost looks
+worse on the client's chosen metric. Both numbers are right; they answer different
+questions.
+
+**Session 4 — under cost, the ranking inverts and so does the baseline.**
+`past_accidents` and `speeding_violations`, which had exactly zero accuracy lift,
+place 2nd and 3rd on expected cost at 5:1, ahead of `age` and `income`. And the
+trivial policies swap: always-claim costs 0.687 while always-no-claim costs 1.567,
+so the majority-class baseline is not a fixed property of the data. Tuning the
+threshold is worth more than choosing the feature.
+
+**Session 4 — the single-feature constraint costs about 6 accuracy points.** The
+15-feature ceiling reaches 84.80% validation accuracy and AUC 0.905 against 78.80%
+and 0.813, and 38% lower expected cost. Priced, and left as the client's decision.
+
+**Session 4 — the test number.** `driving_experience` @ 0.5 scores **76.47%** on the
+held-out test set: +7.80 points over baseline, 95% CI [+5.66, +9.93], P(beats
+baseline) = 1.0000. That is 2.3 points below the validation estimate, which is
+selection optimism behaving exactly as the split design expects. The ceiling model
+scores 82.33%. The comparison worth drawing against the reference is not 77.71% vs
+76.47% — it is a number presented as a result against interval-bounded measured lift.
+
 ---
 
 ## 9. Scope guardrails
