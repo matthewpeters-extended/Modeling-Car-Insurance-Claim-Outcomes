@@ -184,6 +184,74 @@ print(f"  {c_single / c_multi - 1:.1%} higher expected cost at 5:1")
 """)
 
 md("""
+## Robustness: does the headline depend on the artifact?
+
+Postal code 21217 contains 120 customers who all filed a claim — a generation artifact,
+not a fact about drivers. It is excluded from the recommendation, but it is still sitting
+in the training data for every other feature's model.
+
+Stating that as a limitation is weaker than measuring it. Removing those 120 rows and
+re-running the entire pipeline from the split onward answers the question directly.
+""")
+
+co("""
+sens = read("sensitivity")
+wide = sens.pivot(index="feature", columns="dataset",
+                  values=["accuracy", "lift_over_baseline", "roc_auc"])
+wide.columns = [f"{m}__{d}" for m, d in wide.columns]
+wide["lift_change"] = wide["lift_over_baseline__artifact removed"] - wide["lift_over_baseline__full dataset"]
+wide["auc_change"] = wide["roc_auc__artifact removed"] - wide["roc_auc__full dataset"]
+wide[["lift_over_baseline__full dataset", "lift_over_baseline__artifact removed",
+      "lift_change", "roc_auc__full dataset", "roc_auc__artifact removed", "auc_change"]].round(4)
+""")
+
+md("""
+**The headline survives.** `driving_experience` keeps a lift of +0.0762 against +0.0780,
+a change of −0.0018 — well inside the bootstrap interval on the original estimate. Its
+ROC-AUC actually *improves*, from 0.794 to 0.811, which is what you would expect when a
+degenerate group that no feature can rank is taken out of the data.
+
+The artifact was not propping up the result. That is now a measured statement rather than
+a hopeful one, and `tests/test_reproducibility.py` asserts it so it cannot quietly stop
+being true.
+
+Note that the baseline rises from 0.6867 to 0.6951 once the 120 all-claim rows are gone —
+removing them lowers the claim rate. Comparing raw accuracies across the two columns would
+be a mistake; the lift columns are the ones that mean the same thing in both.
+""")
+
+md("""
+## The recommendation, and the honest caveat on it
+
+The results table above reports the runner-up on test as well as the winner, and the
+comparison deserves stating plainly.
+""")
+
+co("""
+final.loc[["driving_experience @ 0.5", "age @ 0.5 (runner-up)"],
+          ["accuracy", "lift_over_baseline", "roc_auc"]].round(4)
+""")
+
+md("""
+**On the test set, `age` scores higher than `driving_experience` — 0.7747 against
+0.7647.** The order reverses from validation, where `driving_experience` led 0.7880 to
+0.7787.
+
+This is not a contradiction of the earlier finding. It *is* the earlier finding. The
+bootstrap put the 95% interval for the gap at [−0.010, +0.029] and concluded the two were
+statistically indistinguishable; a rank reversal on a fresh 1,500-customer sample is
+precisely what "indistinguishable" looks like when you go and draw one.
+
+`driving_experience` remains the recommendation, for a reason that does not depend on the
+accuracy coin-flip: its ROC-AUC is 0.794 against 0.754, so it ranks customers by risk
+appreciably better. For an insurer that eventually wants to price rather than merely
+flag, that is the property worth having.
+
+But the defensible sentence is the tie, not the win. Anyone reporting one of these two
+features as *the* answer, on either split, is reading noise.
+""")
+
+md("""
 ## Summary of every finding
 
 | # | Finding | Evidence |
@@ -200,6 +268,8 @@ md("""
 | 10 | Encoding by dtype compared 4-parameter and 2-parameter models | `n_parameters` by scheme |
 | 11 | `postal_code` perfectly separates 120 customers | 100% claim rate, coefficient 22.3 |
 | 12 | The one-feature constraint costs ~6 accuracy points | 15-feature ceiling |
+| 13 | The headline does not depend on the artifact | lift −0.0018 when 21217 removed, AUC +0.017 |
+| 14 | On test, the runner-up scores *higher* | `age` 0.7747 vs `driving_experience` 0.7647 |
 """)
 
 nb["cells"] = c

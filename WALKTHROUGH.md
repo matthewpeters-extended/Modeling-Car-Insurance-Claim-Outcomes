@@ -203,6 +203,63 @@ the convention.
 
 ---
 
+## Two loose ends I went back and closed
+
+After the first push I had two caveats sitting in the README that were doing no work —
+each was a sentence saying "be careful about this" with nothing measured behind it.
+
+**"Install from the lock file if a library version changes."** That is advice, not a
+guarantee. The reproduction path told people to `pip install -r requirements.txt`, which
+carries lower bounds and resolves to whatever is current. A pandas release a year from now
+could shift a digit and nothing would flag it. So I pinned the environment that produced
+the tables in `src/environment.py`, made `run_experiment.py` check it on every run and warn
+on mismatch, wrote the comparison out as a committed table, and changed both the README and
+SETUP.md to install from the lock file by default.
+
+**"The dataset is synthetic, so read the effect sizes carefully."** True, and useless as
+written — it gives a reader no way to judge how much it matters. The concrete worry is that
+the 120 all-claim rows in postal code 21217 were quietly inflating the headline. That is
+testable: drop them, re-run the entire pipeline from the split onward, and compare.
+
+The headline survives. `driving_experience` keeps a lift of +0.0762 against +0.0780, a
+change of −0.0018, and its ROC-AUC *improves* from 0.794 to 0.811 — which makes sense, since
+a group nothing can rank is being removed. The caveat is now a measured statement with a
+number attached, and `tests/test_reproducibility.py` asserts it so it cannot quietly stop
+being true.
+
+### What that second fix turned up
+
+Adding the runner-up to the final results table showed something I should have published
+the first time: **on the test set `age` scores 0.7747 and `driving_experience` scores
+0.7647.** The order reverses from validation.
+
+I had reported only the validation-selected winner's test score. That is not wrong — it is
+the honest way to report a selected model — but omitting the runner-up's test score
+understated my own finding. The bootstrap said the gap was indistinguishable; a rank
+reversal on a fresh sample is that claim coming true in the most concrete way available,
+and it is more persuasive than the confidence interval I had led with.
+
+Looking at the full row made the recommendation clearer rather than muddier. `age` wins on
+accuracy and on nothing else: worse AUC (0.754 vs 0.794), much worse recall (0.479 vs
+0.704), and substantially worse expected cost (0.879 vs 0.606). It buys its accuracy by
+flagging fewer customers and missing more claims — improving the metric the client asked
+for while getting worse at the job. Which is, once more, the entire argument of this
+project, this time arriving uninvited in a table row.
+
+### And one more self-inflicted error
+
+Writing the runner-up into the README table by hand, I copied accuracy, lift and AUC from
+real output and then **invented** plausible-looking values for precision, recall and cost.
+I caught it on a verification pass: the real figures were 0.708, 0.479 and 0.879, against
+the 0.657, 0.596 and 0.633 I had typed.
+
+Nobody would have noticed. The numbers looked reasonable and sat in a table full of
+correct ones. The fix was to stop hand-typing the table at all — it is now generated from
+`results_final.csv` — and it is a good argument for the discipline the rest of the project
+is about.
+
+---
+
 ## What I would do with more time
 
 - **Firth's penalised logistic regression for `postal_code`.** I detect the separation and

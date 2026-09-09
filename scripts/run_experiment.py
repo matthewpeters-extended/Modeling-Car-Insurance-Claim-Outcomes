@@ -29,6 +29,8 @@ from src.data import load_raw, majority_class_baseline, split_data  # noqa: E402
 from src.evaluate import classification_metrics, expected_cost   # noqa: E402
 from src.features import MedianImputer, build_design, n_parameters  # noqa: E402
 from src.models import sweep_features                            # noqa: E402
+from src.environment import as_frame as env_frame, check as env_check  # noqa: E402
+from src.sensitivity import artifact_sensitivity                 # noqa: E402
 
 N_BOOTSTRAP = 10_000
 THRESHOLDS = np.arange(0.02, 0.99, 0.01)
@@ -46,7 +48,10 @@ def main() -> int:
     out = cfg.DATA_PROCESSED
     out.mkdir(parents=True, exist_ok=True)
 
-    print("\n[1/6] Loading and splitting")
+    print("\n[1/7] Environment")
+    env_check()
+
+    print("\n[2/7] Loading and splitting")
     df = load_raw()
     train, val, test = split_data(df)
     imputer = MedianImputer().fit(train)          # D3: train-fitted, never full-data
@@ -62,7 +67,7 @@ def main() -> int:
     } for name, part in [("train", train), ("val", val), ("test", test)]]
     ).to_csv(out / "results_baseline.csv", index=False)
 
-    print("\n[2/6] EDA: claim-rate spread by feature")
+    print("\n[3/7] EDA: claim-rate spread by feature")
     cat_cols = (list(cfg.ORDINAL_LEVELS) + ["vehicle_year", "vehicle_type", "gender"]
                 + cfg.BINARY)
     spread = pd.DataFrame([{
@@ -76,7 +81,7 @@ def main() -> int:
     spread.to_csv(out / "results_eda_feature_spread.csv", index=False)
     log(f"widest spread: {spread.iloc[0].feature} ({spread.iloc[0].spread:.4f})")
 
-    print("\n[3/6] D6: is the missingness informative?")
+    print("\n[4/7] D6: is the missingness informative?")
     missingness = pd.DataFrame([{
         "column": col,
         "n_missing": int(train[col].isna().sum()),
@@ -102,7 +107,7 @@ def main() -> int:
     log(f"smallest p = {mar.p_value.min():.4f} vs Bonferroni {0.05 / len(mar):.5f}: "
         f"{'informative' if mar.p_value.min() < 0.05 / len(mar) else 'not informative'}")
 
-    print("\n[4/6] D3: what does the imputation leak cost?")
+    print("\n[5/7] D3: what does the imputation leak cost?")
     leaky = MedianImputer().fit(df)               # what the reference does
     rows = []
     for col in cfg.COLUMNS_WITH_MISSING:
@@ -131,14 +136,14 @@ def main() -> int:
                       "count" if f in cfg.COUNTS else "continuous" for f in cfg.FEATURES]
     counts[["kind", "linear", "dummy"]].to_csv(out / "results_encoding_parameters.csv")
 
-    print("\n[5/6] Single-feature sweep, both encoding schemes")
+    print("\n[6/7] Single-feature sweep, both encoding schemes")
     results = sweep_features(train, val, imputer=imputer, baseline=baseline)
     results.to_csv(out / "results_single_feature.csv", index=False)
     winner = results[results.scheme == "dummy"].nlargest(1, "accuracy").iloc[0]
     log(f"{len(results)} models fitted; best = {winner.feature} "
         f"({winner.accuracy:.4f}, lift {winner.lift_over_baseline:+.4f})")
 
-    print("\n[6/6] Bootstrap, thresholds, ceiling, and the test set")
+    print("\n[7/7] Bootstrap, thresholds, ceiling, and the test set")
 
     def fit_predict(features, target):
         X_tr = sm.add_constant(build_design(tr, features, "dummy"))
@@ -194,10 +199,15 @@ def main() -> int:
 
     # The test set. Scored once, with every choice already fixed above.
     p_de_test = fit_predict(["driving_experience"], te)
+    p_age_test = fit_predict(["age"], te)
     p_multi_test = fit_predict(multi_features, te)
     final = []
     for label, p, t in [
         ("driving_experience @ 0.5", p_de_test, 0.5),
+        # The runner-up, reported on test as well. The bootstrap said the two were
+        # indistinguishable; publishing only the selected one would hide how
+        # literally true that turned out to be.
+        ("age @ 0.5 (runner-up)", p_age_test, 0.5),
         ("driving_experience @ 0.05 (cost-optimal)", p_de_test, 0.05),
         ("all features @ 0.5 (ceiling)", p_multi_test, 0.5),
         ("all features @ 0.16 (cost-optimal)", p_multi_test, 0.16),
@@ -210,6 +220,16 @@ def main() -> int:
         ["accuracy", "baseline", "lift_over_baseline", "roc_auc",
          "precision", "recall", "expected_cost_5to1"]]
     final_df.to_csv(out / "results_final.csv")
+
+    sens_long, sens_wide = artifact_sensitivity(df)
+    sens_long.to_csv(out / "results_sensitivity.csv", index=False)
+    de = sens_wide.loc["driving_experience"]
+    log(f"artifact removed: driving_experience lift "
+        f"{de['lift_over_baseline__full dataset']:+.4f} -> "
+        f"{de['lift_over_baseline__artifact removed']:+.4f} "
+        f"(change {de['lift_change']:+.4f})")
+
+    env_frame().to_csv(out / "results_environment.csv", index=False)
 
     headline = final_df.loc["driving_experience @ 0.5"]
     print("\n" + "=" * 78)

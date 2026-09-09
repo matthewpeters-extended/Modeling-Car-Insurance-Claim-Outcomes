@@ -16,10 +16,12 @@ never the model's to claim.
 > The reference reports 77.71% without stating that predicting "no claim" for everyone
 > scores 68.67%. **Nine of those points are the base rate.**
 >
-> And the winner does not really win: its margin over `age` has a 95% CI of
-> **[−0.010, +0.029]**. The two are statistically indistinguishable.
+> And the winner does not really win. Its margin over `age` has a 95% CI of
+> **[−0.010, +0.029]**, and on the test set `age` actually scores **higher** — 0.7747
+> against 0.7647. The two are statistically indistinguishable, and the reversal on a
+> fresh sample is what that looks like in practice.
 
-Python · statsmodels · scikit-learn · pandas · 42 tests
+Python · statsmodels · scikit-learn · pandas · 51 tests
 
 ![Accuracy decomposition](reports/figures/headline_accuracy_decomposition.png)
 
@@ -33,9 +35,10 @@ validation.
 | Model | Accuracy | Baseline | Lift | ROC-AUC | Precision | Recall | Cost @ 5:1 |
 |---|---|---|---|---|---|---|---|
 | **`driving_experience` @ 0.5** | **0.7647** | 0.6867 | **+0.0780** | 0.7938 | 0.607 | 0.704 | 0.606 |
-| `driving_experience` @ 0.05 (cost-optimal) | 0.5993 | 0.6867 | −0.0874 | 0.7938 | 0.436 | 0.945 | **0.470** |
+| `age` @ 0.5 (runner-up) | 0.7747 | 0.6867 | +0.0880 | 0.7542 | 0.708 | 0.479 | 0.879 |
+| `driving_experience` @ 0.05 (cost-optimal) | 0.5993 | 0.6867 | −0.0874 | 0.7938 | 0.436 | 0.945 | 0.470 |
 | All 15 features @ 0.5 (ceiling) | 0.8233 | 0.6867 | +0.1366 | 0.8778 | 0.724 | 0.704 | 0.547 |
-| All 15 features @ 0.16 (cost-optimal) | 0.7220 | 0.6867 | +0.0353 | 0.8778 | 0.533 | 0.909 | **0.393** |
+| All 15 features @ 0.16 (cost-optimal) | 0.7220 | 0.6867 | +0.0353 | 0.8778 | 0.533 | 0.909 | 0.393 |
 
 Validation accuracy for the recommended model was 0.7880. The 2.3-point drop on test is
 selection optimism — the feature was *chosen* on validation — and exposing it is what the
@@ -99,11 +102,28 @@ zero, with `driving_experience` ahead in 82% of resamples.
 
 ![Bootstrap intervals](reports/figures/results_bootstrap_ci.png)
 
+Then the test set settled it by disagreeing: **`age` scores 0.7747 and
+`driving_experience` 0.7647.** The order reverses.
+
+That is not a contradiction of the bootstrap. It is the bootstrap being right. A rank
+reversal on a fresh 1,500-customer sample is exactly what an interval spanning zero
+predicts will happen, and it is much harder to argue with than a confidence interval.
+
 The lift over baseline is not in doubt; the ranking within the top two is. This was
 foreshadowed in the EDA: `age` spreads the outcome slightly *wider* (0.627 vs 0.612), the
 two have a Cramér's V of 0.668, and their crosstab is triangular, since a 16-25 year old
 cannot have 30 years of driving experience. Two features encoding the same underlying
 fact are hard to separate.
+
+`driving_experience` stays the recommendation, and the results table shows why: `age`
+wins on accuracy **and on nothing else**. Against `age` it has better ROC-AUC (0.794 vs
+0.754), far better recall (0.704 vs 0.479) and substantially lower expected cost at 5:1
+(0.606 vs 0.879). `age` reaches its higher accuracy by flagging fewer customers and
+therefore missing more claims — which improves the one metric the client asked for while
+making the model worse at the job.
+
+That is the whole argument of this project reappearing in a single comparison. But the
+defensible sentence about accuracy is still the tie, not the win.
 
 The reference names one as *the* answer with no interval attached. It picked the right
 neighbourhood and expressed more confidence than the data supports.
@@ -156,9 +176,13 @@ an assumption, and now it has a number attached.
 ## What this does not show
 
 - **The dataset is synthetic.** The 100% claim rate in one postal code proves it. Effect
-  sizes here should not be read as facts about real drivers.
+  sizes here should not be read as facts about real drivers. The headline does not
+  *depend* on that artifact, though — removing all 120 rows and re-running the pipeline
+  moves the lift by −0.0018 and raises ROC-AUC from 0.794 to 0.811. Measured, not assumed,
+  and asserted in `tests/test_reproducibility.py`.
 - **One split, one seed.** Every number comes from a single seeded 70/15/15 split.
-  Repeating across seeds would separate real effects from split luck.
+  Repeating across seeds would separate real effects from split luck — and the `age`
+  reversal between validation and test is a live demonstration of why that matters.
 - **The 5:1 cost ratio is assumed, not measured.** It is a stated input. Real claim
   severities would change the optimal threshold, though not the shape of the argument.
 - **Probability calibration is unverified.** Brier scores are reported but reliability
@@ -180,11 +204,17 @@ git clone https://github.com/matthewpeters-extended/Modeling-Car-Insurance-Claim
 Then, from the project root:
 
 ```bash
-python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt
+python3.12 -m venv .venv && .venv/bin/pip install -r requirements-lock.txt
 ```
 
+Install from **`requirements-lock.txt`**, not `requirements.txt`. The latter carries lower
+bounds and will resolve to whatever is current, which is fine for reading the code but
+does not guarantee the published numbers. The lock file is the exact environment these
+results came from, and `scripts/run_experiment.py` prints a warning if what is installed
+does not match it.
+
 Regenerate every published table from the raw CSV — deleting `data/processed/` first is a
-fair test, and all 11 tables return byte-identical:
+fair test, and all 13 tables return byte-identical:
 
 ```bash
 .venv/bin/python scripts/run_experiment.py
@@ -213,7 +243,8 @@ Full setup notes are in [docs/SETUP.md](docs/SETUP.md).
 ├── reports/figures/           the figures this README embeds
 ├── scripts/run_experiment.py  regenerates every table from the raw CSV
 ├── src/                       config, data contract, features, metrics, models, plots
-└── tests/                     42 tests: the split, the encoding, the metrics
+│                              environment (pinned versions), sensitivity (artifact check)
+└── tests/                     51 tests: split, encoding, metrics, environment, sensitivity
 ```
 
 The notebooks tell the story; `src/` holds the logic; `scripts/run_experiment.py` is the
