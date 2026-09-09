@@ -174,7 +174,7 @@ an assumption, and now it has a number attached.
 Requires Python 3.12.
 
 ```bash
-git clone https://github.com/matthewpeters-extended/car-insurance-claim-modeling.git
+git clone https://github.com/matthewpeters-extended/Modeling-Car-Insurance-Claim-Outcomes.git
 ```
 
 Then, from the project root:
