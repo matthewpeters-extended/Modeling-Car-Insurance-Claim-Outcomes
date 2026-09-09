@@ -383,6 +383,32 @@ and `driving_experience`. Dummy encoding is therefore expected to fit the two
 leading candidates better, and the open question for Session 3 is whether the extra
 parameters earn their keep once AIC prices them.
 
+**Session 3 — the reference's answer survives a proper evaluation.**
+`driving_experience` wins at 78.80% validation accuracy against the 68.67%
+baseline, a lift of 10.13 points, AUC 0.813 — first under every metric in the
+table and under both encoding schemes. Confirming the reference rather than
+overturning it is the honest outcome and the more common one; the README should
+lead with the rebuilt evidence, not with a claim of contradiction.
+
+**Session 3 — accuracy is blind to nine of sixteen features.** Nine features score
+*exactly* 68.67% with a predicted-positive rate of zero: they classify every
+customer as "no claim." Two of them are not weak at all — `speeding_violations`
+(AUC 0.732) and `past_accidents` (AUC 0.726) rank risk better than
+`vehicle_ownership` or `credit_score`, both of which do beat the accuracy
+baseline. D5 in one picture, and the strongest single argument in the write-up.
+
+**Session 3 — D4 was real but the client's metric cannot see it.** Linear and
+dummy encoding give identical accuracy and an identical ranking. The probabilities
+genuinely differ (up to 0.050 on `age`), but only one level of each ordinal sits
+above a 50% claim rate and both schemes agree on which, so every customer lands on
+the same side of the threshold. AIC does detect the difference — and confirms the
+prediction made in Session 2 from log-odds curvature: `age`, the most curved,
+gains 53.5 AIC points from dummy encoding, while the near-straight `income` and
+`education` lose 2.5 and 1.2. Prediction made in advance, then borne out.
+
+**Session 3 — the canary passed.** `vehicle_type` scored AUC 0.494 and zero lift,
+asserted in the notebook. The harness is trustworthy.
+
 ---
 
 ## 9. Scope guardrails
