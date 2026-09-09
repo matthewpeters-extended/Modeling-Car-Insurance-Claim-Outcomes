@@ -1,6 +1,6 @@
 # Car Insurance Claim Outcomes
 
-**Which single customer attribute best predicts an insurance claim — and is the answer
+**Which single customer attribute best predicts an insurance claim, and is the answer
 actually better than guessing?**
 
 An insurer with no ML infrastructure asked for one feature they could threshold on. A
@@ -9,7 +9,7 @@ project rebuilds the evaluation that number is missing, and finds that most of i
 never the model's to claim.
 
 > **Headline result.** On 1,500 held-out customers, `driving_experience` predicts claims
-> with **76.47% accuracy** against a **68.67% majority-class baseline** — a lift of
+> with **76.47% accuracy** against a **68.67% majority-class baseline**: a lift of
 > **+7.80 points**, 95% CI **[+5.66, +9.93]**, beating the baseline in 10,000 of 10,000
 > bootstrap resamples.
 >
@@ -17,7 +17,7 @@ never the model's to claim.
 > scores 68.67%. **Nine of those points are the base rate.**
 >
 > And the winner does not really win. Its margin over `age` has a 95% CI of
-> **[−0.010, +0.029]**, and on the test set `age` actually scores **higher** — 0.7747
+> **[−0.010, +0.029]**, and on the test set `age` actually scores **higher**, 0.7747
 > against 0.7647. The two are statistically indistinguishable, and the reversal on a
 > fresh sample is what that looks like in practice.
 
@@ -41,7 +41,7 @@ validation.
 | All 15 features @ 0.16 (cost-optimal) | 0.7220 | 0.6867 | +0.0353 | 0.8778 | 0.533 | 0.909 | 0.393 |
 
 Validation accuracy for the recommended model was 0.7880. The 2.3-point drop on test is
-selection optimism — the feature was *chosen* on validation — and exposing it is what the
+selection optimism (the feature was *chosen* on validation), and exposing it is what the
 split is for.
 
 Reproduce every number:
@@ -60,7 +60,7 @@ The target is 31.33% positive. Predicting "no claim" for every customer scores 6
 without a model at all.
 
 The reference never states this, so a reader cannot tell whether 77.71% represents ten
-points of signal or none. It represents about nine — real, useful, and roughly a tenth of
+points of signal or none. It represents about nine: real, useful, and roughly a tenth of
 what the headline number implies.
 
 Every accuracy in this repository is reported next to that floor.
@@ -85,7 +85,7 @@ Three consequences follow:
 
 - **The optimal threshold is never 0.5.** It is 0.25 even at symmetric cost, because the
   classes are imbalanced, and 0.05 at 5:1.
-- **At the cost-optimal threshold, accuracy falls to 61.3%** — below the baseline. A model
+- **At the cost-optimal threshold, accuracy falls to 61.3%**, below the baseline. A model
   tuned for business cost looks worse on the client's chosen metric. Both are correct;
   they answer different questions.
 - **The baseline itself flips.** Under 5:1, "always predict claim" costs 0.687 and "always
@@ -97,7 +97,7 @@ Tuning the threshold is worth more than choosing the feature.
 ### 3. The winner is tied with the runner-up
 
 `driving_experience` beat `age` by 0.93 points on validation. A paired bootstrap over
-10,000 resamples puts the 95% interval for that gap at **[−0.010, +0.029]** — spanning
+10,000 resamples puts the 95% interval for that gap at **[−0.010, +0.029]**, spanning
 zero, with `driving_experience` ahead in 82% of resamples.
 
 ![Bootstrap intervals](reports/figures/results_bootstrap_ci.png)
@@ -119,7 +119,7 @@ fact are hard to separate.
 wins on accuracy **and on nothing else**. Against `age` it has better ROC-AUC (0.794 vs
 0.754), far better recall (0.704 vs 0.479) and substantially lower expected cost at 5:1
 (0.606 vs 0.879). `age` reaches its higher accuracy by flagging fewer customers and
-therefore missing more claims — which improves the one metric the client asked for while
+therefore missing more claims, which improves the one metric the client asked for while
 making the model worse at the job.
 
 That is the whole argument of this project reappearing in a single comparison. But the
@@ -130,12 +130,12 @@ neighbourhood and expressed more confidence than the data supports.
 
 ### 4. One postal code is not a feature, it is an artifact
 
-All **120** customers in postal code 21217 filed a claim — 100%, in the training,
+All **120** customers in postal code 21217 filed a claim: 100%, in the training,
 validation and test splits alike. Their credit scores, mileage and ages are unremarkable,
 so nothing in their risk profile explains it.
 
 It causes textbook perfect separation. The coefficient diverges to **22.3** on the
-log-odds scale — an odds ratio near 4.7 billion — and the optimiser fails to converge.
+log-odds scale (an odds ratio near 4.7 billion), and the optimiser fails to converge.
 As a model it posts precision **1.000** and recall **0.045**: it flags only the 21217
 customers and is never wrong, because in this dataset that postal code *is* the outcome.
 
@@ -146,11 +146,11 @@ A quieter bug sits underneath: `postal_code` is stored as an integer, so a dtype
 pipeline fits a linear slope across 10238, 21217, 32765, 92101. Those are labels, and
 that arithmetic is meaningless.
 
-### 5. Two defects that turned out not to matter — reported anyway
+### 5. Two defects that turned out not to matter, reported anyway
 
 **Imputation leakage.** The reference computes medians over all 10,000 rows. Fitting on
 train only changes the `credit_score` median by 0.001 and `annual_mileage` not at all.
-Downstream it flips **one validation prediction in 1,500**. Immaterial here — and you
+Downstream it flips **one validation prediction in 1,500**. Immaterial here, and you
 cannot know that without measuring it.
 
 **Encoding by dtype.** The reference silently compares a 4-parameter model
@@ -168,7 +168,7 @@ A model using all 15 usable features reaches **82.33%** accuracy and AUC **0.878
 test, against 76.47% and 0.794 for the single feature.
 
 **The constraint costs about 6 accuracy points, 0.08 AUC, and 20% higher expected cost.**
-Whether that is worth paying is the client's decision — but it should be a decision, not
+Whether that is worth paying is the client's decision, but it should be a decision, not
 an assumption, and now it has a number attached.
 
 ---
@@ -177,11 +177,11 @@ an assumption, and now it has a number attached.
 
 - **The dataset is synthetic.** The 100% claim rate in one postal code proves it. Effect
   sizes here should not be read as facts about real drivers. The headline does not
-  *depend* on that artifact, though — removing all 120 rows and re-running the pipeline
+  *depend* on that artifact, though. Removing all 120 rows and re-running the pipeline
   moves the lift by −0.0018 and raises ROC-AUC from 0.794 to 0.811. Measured, not assumed,
   and asserted in `tests/test_reproducibility.py`.
 - **One split, one seed.** Every number comes from a single seeded 70/15/15 split.
-  Repeating across seeds would separate real effects from split luck — and the `age`
+  Repeating across seeds would separate real effects from split luck, and the `age`
   reversal between validation and test is a live demonstration of why that matters.
 - **The 5:1 cost ratio is assumed, not measured.** It is a stated input. Real claim
   severities would change the optimal threshold, though not the shape of the argument.
@@ -213,7 +213,7 @@ does not guarantee the published numbers. The lock file is the exact environment
 results came from, and `scripts/run_experiment.py` prints a warning if what is installed
 does not match it.
 
-Regenerate every published table from the raw CSV — deleting `data/processed/` first is a
+Regenerate every published table from the raw CSV. Deleting `data/processed/` first is a
 fair test, and all 13 tables return byte-identical:
 
 ```bash
@@ -239,7 +239,7 @@ Full setup notes are in [docs/SETUP.md](docs/SETUP.md).
 ├── data/raw/                  car_insurance.csv, 10,000 rows, committed
 ├── data/processed/            every published result table, regenerated by one command
 ├── docs/                      provenance, data dictionary, setup, the reference notebook
-├── notebooks/                 01 EDA - 05 results, executed with outputs
+├── notebooks/                 01 EDA to 05 results, executed with outputs
 ├── reports/figures/           the figures this README embeds
 ├── scripts/run_experiment.py  regenerates every table from the raw CSV
 ├── src/                       config, data contract, features, metrics, models, plots
@@ -271,10 +271,10 @@ cost-sensitive thresholds, bootstrapped confidence intervals, detected and quara
 
 **Why the numbers differ:** the reference reports in-sample accuracy on all 10,000 rows.
 This project reports held-out accuracy on 1,500 rows the models never saw. 77.71% and
-76.47% are not competing estimates of the same quantity — one is training fit, the other
+76.47% are not competing estimates of the same quantity: one is training fit, the other
 is generalisation.
 
-The reference's conclusion — that driving experience is the strongest single predictor —
+The reference's conclusion, that driving experience is the strongest single predictor,
 **survives this rebuild**, with the qualification that it is tied with `age`. Confirming
 someone's answer with better evidence is the more common outcome of this kind of work
 than overturning it, and it is what happened here.
