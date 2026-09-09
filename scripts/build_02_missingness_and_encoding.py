@@ -300,7 +300,7 @@ cfg.DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
 missingness.to_csv(cfg.DATA_PROCESSED / "results_missingness.csv", index=False)
 mar.to_csv(cfg.DATA_PROCESSED / "results_missingness_mar.csv", index=False)
 leak.to_csv(cfg.DATA_PROCESSED / "results_imputation_leak.csv")
-counts.to_csv(cfg.DATA_PROCESSED / "results_encoding_parameters.csv")
+counts[["kind", "linear", "dummy"]].to_csv(cfg.DATA_PROCESSED / "results_encoding_parameters.csv")
 print("wrote 4 result tables to data/processed/")
 """)
 

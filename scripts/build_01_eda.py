@@ -294,7 +294,7 @@ md("""
 ## 7. What carries into Session 2
 
 - **The baseline is 68.67%.** Every accuracy reported in this project is stated next to
-  it. Reproduced in `data/processed/baseline.csv`.
+  it. Reproduced in `data/processed/results_baseline.csv`.
 - **`driving_experience` spreads the outcome furthest** (0.628 to 0.019, monotone). The
   reference's conclusion looks sound; its evidence is what needs rebuilding.
 - **`postal_code` must be categorical and penalised**, and its accuracy carries a health
@@ -312,10 +312,10 @@ pd.DataFrame([{
     "claim_rate": part[cfg.TARGET].mean(),
     "majority_class_baseline": majority_class_baseline(part[cfg.TARGET]),
 } for name, part in [("train", train), ("val", val), ("test", test)]]
-).to_csv(cfg.DATA_PROCESSED / "baseline.csv", index=False)
+).to_csv(cfg.DATA_PROCESSED / "results_baseline.csv", index=False)
 
-spread.to_csv(cfg.DATA_PROCESSED / "eda_feature_spread.csv", index=False)
-print("wrote baseline.csv and eda_feature_spread.csv")
+spread.to_csv(cfg.DATA_PROCESSED / "results_eda_feature_spread.csv", index=False)
+print("wrote results_baseline.csv and results_eda_feature_spread.csv")
 """)
 
 nb["cells"] = c

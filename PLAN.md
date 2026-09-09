@@ -3,7 +3,7 @@
 **Repo:** `~/projects/car-insurance-claim-modeling`
 **Started:** 2026-09-08
 **Estimated effort:** 12-14 hours across 5 working sessions
-**Status:** planning complete, no analysis code written yet
+**Status:** complete. All five sessions delivered; see §8b for findings.
 
 ---
 
@@ -441,6 +441,15 @@ baseline) = 1.0000. That is 2.3 points below the validation estimate, which is
 selection optimism behaving exactly as the split design expects. The ceiling model
 scores 82.33%. The comparison worth drawing against the reference is not 77.71% vs
 76.47% — it is a number presented as a result against interval-bounded measured lift.
+
+**Session 5 — reproducibility, and two things it caught.** `scripts/run_experiment.py`
+regenerates all 11 tables from the raw CSV alone; deleting `data/processed/` and
+re-running returns them byte-identical. Building it surfaced two real defects:
+one table differed from its notebook version by column order only, and two tables
+(`baseline.csv`, `eda_feature_spread.csv`) were never tracked at all, because the
+`.gitignore` allowlist matched `results_*.csv`. A fresh clone would have been
+missing the baseline — the single most important number in the project. Both fixed;
+the naming convention is now the allowlist.
 
 ---
 
